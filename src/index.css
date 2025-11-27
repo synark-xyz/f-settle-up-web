@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+  --color-brand-light: #d1fae5;
+  /* Emerald 100 */
+  --color-brand-dark: #064e3b;
+  /* Emerald 900 */
+  --color-brand-primary: #10b981;
+  /* Emerald 500 - Vibrant Green */
+  --color-brand-secondary: #34d399;
+  /* Emerald 400 */
+
+  --color-dark-bg: #0f172a;
+  /* Slate 900 - Deep Dark Blue/Gray */
+  --color-dark-surface: #1e293b;
+  /* Slate 800 - Lighter Surface */
+  --color-dark-card: #334155;
+  /* Slate 700 - Card Background */
+}
+
+body {
+  @apply bg-gray-50 text-gray-900 transition-colors duration-300;
+}
+
+html.dark body {
+  @apply bg-dark-bg text-gray-100;
+}
+
+/* Custom Gradients */
+.bg-brand-gradient {
+  @apply bg-gradient-to-br from-brand-secondary to-brand-primary;
+}
+
+/* Scrollbar hiding for clean UI */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
