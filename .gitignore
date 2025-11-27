@@ -8,9 +8,31 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
-dist-ssr
+# Build output
+/dist
+/dist-ssr
+# Local development files
 *.local
+
+# Environment files
+.env
+.env.*
+# Secrets should not be committed
+
+# Runtime/cache files
+.cache
+.vite
+.parcel-cache
+
+# Yarn & npm lockfiles and caches
+.yarn/cache
+.yarn/install-state.gz
+.pnp.*
+.npmrc
+
+# Test coverage reports
+coverage/
+.nyc_output/
 
 # Editor directories and files
 .vscode/*
