@@ -1,8 +1,11 @@
 import React from 'react';
 import { Trash2, CreditCard } from 'lucide-react';
 import { formatCurrency, formatDate, getDaysUntil, getDaysUntilLabel, cn } from '../lib/utils';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const CardList = ({ cards, onDelete }) => {
+    const { selectedCurrency } = useCurrency();
+
     if (cards.length === 0) {
         return (
             <div className="text-center py-10 text-gray-400">
@@ -63,11 +66,11 @@ const CardList = ({ cards, onDelete }) => {
                         <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-gray-50">
                             <div>
                                 <p className="text-xs text-gray-500 uppercase font-semibold">Min Payment</p>
-                                <p className="font-mono font-medium text-gray-900">{formatCurrency(card.minimumPayment)}</p>
+                                <p className="font-mono font-medium text-gray-900">{formatCurrency(card.minimumPayment, selectedCurrency)}</p>
                             </div>
                             <div className="text-right">
                                 <p className="text-xs text-gray-500 uppercase font-semibold">Balance</p>
-                                <p className="font-mono font-medium text-gray-900">{formatCurrency(card.statementBalance)}</p>
+                                <p className="font-mono font-medium text-gray-900">{formatCurrency(card.statementBalance, selectedCurrency)}</p>
                             </div>
                         </div>
                     </div>

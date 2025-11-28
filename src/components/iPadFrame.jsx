@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const iPadFrame = ({ children }) => {
+const IpadFrame = ({ children }) => {
     const [isDesktop, setIsDesktop] = useState(false);
 
     useEffect(() => {
@@ -38,4 +38,4 @@ const iPadFrame = ({ children }) => {
     );
 };
 
-export default iPadFrame;
+export default IpadFrame;

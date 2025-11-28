@@ -15,8 +15,8 @@ node_modules
 *.local
 
 # Environment files
+*.txt
 .env
-.env.*
 # Secrets should not be committed
 
 # Runtime/cache files

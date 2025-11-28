@@ -1,17 +1,21 @@
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { format, differenceInCalendarDays, parseISO } from "date-fns";
+import { format, differenceInCalendarDays } from "date-fns";
+import { formatCurrencyValue } from './currencyUtils';
 
 export function cn(...inputs) {
     return twMerge(clsx(inputs));
 }
 
-export const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    }).format(amount);
-};
+/**
+ * Format currency with selected currency from context
+ * @param {number} amount - Amount to format
+ * @param {string} currencyCode - Optional currency code, defaults to USD for backward compatibility
+ * @returns {string} Formatted currency string
+ */
+export function formatCurrency(amount, currencyCode = 'USD') {
+    return formatCurrencyValue(amount, currencyCode);
+}
 
 export const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -19,7 +23,7 @@ export const formatDate = (dateString) => {
         // Handle both Firestore Timestamp and string dates
         const date = dateString.toDate ? dateString.toDate() : new Date(dateString);
         return format(date, 'MMM d, yyyy');
-    } catch (e) {
+    } catch {
         return dateString;
     }
 };
@@ -34,7 +38,7 @@ export const getDaysUntil = (dateString) => {
         targetDate.setHours(0, 0, 0, 0);
 
         return differenceInCalendarDays(targetDate, today);
-    } catch (e) {
+    } catch {
         return 0;
     }
 };

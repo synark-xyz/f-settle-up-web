@@ -33,7 +33,7 @@ export const parseStatement = (text) => {
 
         return result;
 
-    } catch (e) {
+    } catch {
         return { error: "Parsing error. Ensure format matches: Name: ... | Due Date: ... | Min: ... | Balance: ..." };
     }
 };

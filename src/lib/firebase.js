@@ -23,10 +23,12 @@ const getFirebaseConfig = () => {
     };
 };
 
-const app = initializeApp(getFirebaseConfig());
+export const app = initializeApp(getFirebaseConfig());
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+// Messaging is handled in notificationUtils to avoid errors in non-supported environments
+
 
 export const getAppId = () => {
     if (typeof window !== 'undefined' && window.__app_id) {

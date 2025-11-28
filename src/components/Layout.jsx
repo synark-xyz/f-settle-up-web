@@ -2,8 +2,9 @@ import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { CreditCard } from 'lucide-react';
 import UserMenu from './UserMenu';
+import CurrencySelector from './CurrencySelector';
 
-const Layout = ({ children, onNavigate }) => {
+const Layout = ({ children, onNavigate, onLogin }) => {
     const { user } = useAuth();
 
     return (
@@ -19,7 +20,10 @@ const Layout = ({ children, onNavigate }) => {
                         </div>
                         <h1 className="text-xl font-bold text-white tracking-tight">SettleUp</h1>
                     </button>
-                    <UserMenu onNavigate={onNavigate} />
+                    <div className="flex items-center gap-3">
+                        <CurrencySelector />
+                        <UserMenu onNavigate={onNavigate} onLogin={onLogin} />
+                    </div>
                 </div>
             </header>
             <main className="max-w-7xl mx-auto px-4 py-8">

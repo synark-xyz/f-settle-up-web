@@ -1,36 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import CardList from './components/CardList';
 import AddCardModal from './components/AddCardModal';
+import LoginModal from './components/LoginModal';
+import DuePaymentsCarousel from './components/DuePaymentsCarousel';
 import Onboarding from './components/Onboarding';
 import Profile from './components/Profile';
 import Settings from './components/Settings';
 import { Plus } from 'lucide-react';
 import { db, getAppId } from './lib/firebase';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp, Timestamp, getDocs } from 'firebase/firestore';
 import { getMockCards, MOCK_USER } from './lib/mockData';
 import { isDevMode } from './lib/devMode';
-import iPadFrame from './components/iPadFrame';
+import IpadFrame from './components/iPadFrame';
 
 const SettleUpApp = () => {
   const { user, loading } = useAuth();
+
   const [cards, setCards] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [appId] = useState(getAppId());
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
+    return !hasSeenOnboarding;
+  });
   const [currentPage, setCurrentPage] = useState('home');
   const [devMode] = useState(isDevMode());
-
-  useEffect(() => {
-    // Check if user has seen onboarding
-    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
-    if (hasSeenOnboarding && user) {
-      setShowOnboarding(false);
-    }
-  }, [user]);
 
   // Dev mode: Auto-populate with mock data
   useEffect(() => {
@@ -45,15 +45,30 @@ const SettleUpApp = () => {
 
     const populateDevData = async () => {
       try {
+        // Check if we already have cards in Firestore
+        const q = query(collection(db, collectionPath));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+          console.log("Data already exists, skipping mock population");
+          sessionStorage.setItem('devDataPopulated', 'true');
+          return;
+        }
+
+        console.log("Populating mock data...");
         const mockCards = getMockCards();
         for (const card of mockCards) {
+          // Remove the hardcoded ID from the data we save to Firestore
+          // so Firestore generates a unique ID, or use the ID as the doc ID
+          const { id, ...cardData } = card;
           await addDoc(collection(db, collectionPath), {
-            ...card,
+            ...cardData,
             dueDate: Timestamp.fromDate(card.dueDate),
             createdAt: serverTimestamp()
           });
         }
         sessionStorage.setItem('devDataPopulated', 'true');
+        console.log("Mock data populated");
       } catch (error) {
         console.error('Failed to populate dev data:', error);
       }
@@ -73,8 +88,8 @@ const SettleUpApp = () => {
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const cardsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+        ...doc.data(),
+        id: doc.id
       }));
       setCards(cardsData);
     });
@@ -88,11 +103,17 @@ const SettleUpApp = () => {
   };
 
   const handleAddCard = async (cardData) => {
-    if (!user) return;
+    console.log("Attempting to add card:", cardData);
+    if (!user) {
+      console.error("No user logged in, cannot add card.");
+      return;
+    }
 
     const collectionPath = appId === 'default'
       ? `users/${user.uid}/creditCards`
       : `artifacts/${appId}/users/${user.uid}/creditCards`;
+
+    console.log("Saving to collection path:", collectionPath);
 
     try {
       await addDoc(collection(db, collectionPath), {
@@ -102,6 +123,7 @@ const SettleUpApp = () => {
         statementBalance: parseFloat(cardData.statementBalance),
         createdAt: serverTimestamp()
       });
+      console.log("Card added successfully!");
     } catch (error) {
       console.error("Error adding card: ", error);
       alert("Failed to add card. Check console.");
@@ -131,8 +153,8 @@ const SettleUpApp = () => {
     return <div className="min-h-screen flex items-center justify-center dark:bg-dark-bg dark:text-white">Loading...</div>;
   }
 
-  // Skip onboarding in dev mode
-  if (!user || (showOnboarding && !devMode)) {
+  // Show onboarding if user hasn't seen it, regardless of login status
+  if (showOnboarding && !devMode) {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
@@ -148,14 +170,21 @@ const SettleUpApp = () => {
           <>
             <Dashboard cards={cards} onDelete={handleDeleteCard} />
 
-            <div className="mb-4 flex justify-between items-end mt-8">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white">Your Cards</h2>
-            </div>
+            <DuePaymentsCarousel
+              cards={cards}
+              onMarkPaid={handleDeleteCard}
+            />
 
             <CardList cards={cards} onDelete={handleDeleteCard} />
 
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                if (!user) {
+                  setIsLoginModalOpen(true);
+                } else {
+                  setIsModalOpen(true);
+                }
+              }}
               className="fixed bottom-6 right-6 bg-brand-gradient text-white p-4 rounded-full shadow-xl hover:scale-105 active:scale-95 z-40 transition-all"
               aria-label="Add Card"
             >
@@ -167,25 +196,34 @@ const SettleUpApp = () => {
               onClose={() => setIsModalOpen(false)}
               onAdd={handleAddCard}
             />
+
+            <LoginModal
+              isOpen={isLoginModalOpen}
+              onClose={() => setIsLoginModalOpen(false)}
+            />
           </>
         );
     }
   };
 
   return (
-    <iPadFrame>
-      <Layout onNavigate={handleNavigation}>
+    <IpadFrame>
+      <Layout onNavigate={handleNavigation} onLogin={() => setIsLoginModalOpen(true)}>
         {renderPage()}
       </Layout>
-    </iPadFrame>
+    </IpadFrame>
   );
 };
+
+
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <SettleUpApp />
+        <CurrencyProvider>
+          <SettleUpApp />
+        </CurrencyProvider>
       </AuthProvider>
     </ThemeProvider>
   );

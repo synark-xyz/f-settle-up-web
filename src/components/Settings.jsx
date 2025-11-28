@@ -1,60 +1,66 @@
-import React from 'react';
-import { useTheme } from '../contexts/ThemeContext';
-import { Bell, CreditCard, Shield, Palette, Info, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, CreditCard, Shield, Info, ArrowLeft, Coins } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import CurrencyManager from './CurrencyManager';
+import { requestNotificationPermission, sendLocalNotification } from '../lib/notificationUtils';
 
 const Settings = ({ onNavigate }) => {
-    const { theme, toggleTheme } = useTheme();
-    // In a real router setup, we'd use useNavigate. Here we might need a prop or just rely on the parent handling navigation if it's conditional rendering.
-    // Assuming App.jsx passes a way to go back or we use a simple state change in App.jsx.
-    // Since App.jsx uses conditional rendering based on 'currentPage' state, we need to accept a prop 'onNavigate' or similar.
-    // Let's check App.jsx again. It passes nothing to Settings currently.
-    // We need to update App.jsx to pass onNavigate to Settings and Profile.
+    const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            return Notification.permission === 'granted';
+        }
+        return false;
+    });
 
-    // For now, let's assume we will receive onNavigate prop.
-    // But wait, I need to check App.jsx first to pass the prop.
+    const handleNotificationToggle = async () => {
+        if (!notificationsEnabled) {
+            const token = await requestNotificationPermission();
+            if (token) {
+                setNotificationsEnabled(true);
+                sendLocalNotification('Notifications Enabled', 'You will now receive payment reminders.');
+            }
+        } else {
+            // Cannot revoke permission programmatically, just update UI state
+            // In a real app, we would update the user preference in backend to stop sending
+            setNotificationsEnabled(false);
+        }
+    };
 
     const settingsSections = [
         {
-            title: 'Appearance',
-            icon: Palette,
-            settings: [
-                {
-                    label: 'Theme',
-                    description: 'Choose your preferred color scheme',
-                    action: (
-                        <button
-                            onClick={toggleTheme}
-                            className="px-4 py-2 rounded-lg bg-brand-gradient text-white text-sm font-medium"
-                        >
-                            {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
-                        </button>
-                    )
-                }
-            ]
+            title: 'Currency',
+            icon: Coins,
+            component: <CurrencyManager />
         },
         {
             title: 'Notifications',
             icon: Bell,
             settings: [
                 {
-                    label: 'Payment Reminders',
-                    description: 'Get notified before payment due dates',
+                    label: 'Push Notifications',
+                    description: 'Receive alerts for upcoming payments',
                     action: (
                         <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" className="sr-only peer" defaultChecked />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-primary"></div>
+                            <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={notificationsEnabled}
+                                onChange={handleNotificationToggle}
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-primary"></div>
                         </label>
                     )
                 },
                 {
-                    label: 'Email Notifications',
-                    description: 'Receive updates via email',
+                    label: 'Test Notification',
+                    description: 'Send a test alert to this device',
                     action: (
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" className="sr-only peer" defaultChecked />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-primary"></div>
-                        </label>
+                        <button
+                            onClick={() => sendLocalNotification('Test Alert', 'This is a test notification from SettleUp!')}
+                            className="px-3 py-1 text-xs font-medium text-brand-primary bg-brand-primary/10 rounded-lg hover:bg-brand-primary/20 transition-colors"
+                        >
+                            Send Test
+                        </button>
                     )
                 }
             ]
@@ -112,19 +118,25 @@ const Settings = ({ onNavigate }) => {
                             </div>
                         </div>
 
-                        <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {section.settings.map((setting, idx) => (
-                                <div key={idx} className="px-6 py-4 flex items-center justify-between">
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white">{setting.label}</p>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{setting.description}</p>
+                        {section.component ? (
+                            <div className="px-6 py-4">
+                                {section.component}
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                                {section.settings.map((setting, idx) => (
+                                    <div key={idx} className="px-6 py-4 flex items-center justify-between">
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white">{setting.label}</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{setting.description}</p>
+                                        </div>
+                                        <div className="ml-4">
+                                            {setting.action}
+                                        </div>
                                     </div>
-                                    <div className="ml-4">
-                                        {setting.action}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 ))}
 

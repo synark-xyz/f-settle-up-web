@@ -27,7 +27,7 @@ const CardStack = ({ cards, onCardClick }) => {
                 <AnimatePresence>
                     {cards.map((card, index) => {
                         const cardType = detectCardType(card.last4 || card.cardNumber);
-                        const gradient = getCardGradient(cardType);
+                        const gradient = getCardGradient(card.category || 'Personal'); // Use category for color
                         const logo = getCardLogo(cardType);
 
                         // Stack logic

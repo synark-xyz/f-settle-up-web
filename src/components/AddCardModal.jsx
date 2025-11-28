@@ -2,8 +2,12 @@ import React, { useState, useRef } from 'react';
 import { X, Camera, Upload, Sparkles, CreditCard } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { processImageWithGemini } from '../lib/gemini';
+import { useCurrency } from '../contexts/CurrencyContext';
+import { getCurrencyInfo } from '../lib/currencyUtils';
 
 const AddCardModal = ({ isOpen, onClose, onAdd }) => {
+    const { selectedCurrency } = useCurrency();
+    const currencyInfo = getCurrencyInfo(selectedCurrency);
     const [mode, setMode] = useState('manual'); // manual, scan, upload
     const [formData, setFormData] = useState({
         name: '',
@@ -16,7 +20,9 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
         expiryDate: ''
     });
     const [loading, setLoading] = useState(false);
+    const [loadingStep, setLoadingStep] = useState('');
     const [error, setError] = useState('');
+    const [ocrConfidence, setOcrConfidence] = useState(null);
     const videoRef = useRef(null);
 
     const onDrop = (acceptedFiles) => {
@@ -59,6 +65,7 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
         if (!videoRef.current) return;
 
         setLoading(true);
+        setLoadingStep('Capturing image...');
 
         const canvas = document.createElement('canvas');
         canvas.width = videoRef.current.videoWidth;
@@ -73,6 +80,8 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
         canvas.toBlob(async (blob) => {
             const file = new File([blob], "card-scan.jpg", { type: "image/jpeg" });
 
+            setLoadingStep('Analyzing card with AI...');
+
             // Import processCardScan
             const { processCardScan } = await import('../lib/gemini');
             const result = await processCardScan(file);
@@ -80,6 +89,8 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
             if (result.error) {
                 setError(result.error);
                 setMode('manual');
+                setLoadingStep('');
+                setOcrConfidence(null);
             } else {
                 // Populate form with scanned data
                 setFormData(prev => ({
@@ -89,7 +100,9 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
                     expiryDate: result.expiryDate || prev.expiryDate,
                     last4: result.last4 || (result.cardNumber ? result.cardNumber.slice(-4) : prev.last4)
                 }));
+                setOcrConfidence(result.confidence);
                 setMode('manual'); // Switch to form to review and add more details
+                setLoadingStep('');
             }
             setLoading(false);
         }, 'image/jpeg', 0.95);
@@ -185,7 +198,16 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
                     {loading && (
                         <div className="flex flex-col items-center justify-center py-8 text-brand-primary animate-pulse">
                             <Sparkles size={32} className="mb-2" />
-                            <p className="text-sm font-medium">Analyzing with AI...</p>
+                            <p className="text-sm font-medium">{loadingStep || 'Processing...'}</p>
+                        </div>
+                    )}
+
+                    {ocrConfidence && (
+                        <div className={`mb-4 p-3 rounded-lg text-sm ${ocrConfidence === 'high' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' :
+                            ocrConfidence === 'medium' ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400' :
+                                'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'
+                            }`}>
+                            <strong>Scan Quality: {ocrConfidence.toUpperCase()}</strong> - Please verify all fields below
                         </div>
                     )}
 
@@ -250,6 +272,7 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
                                 >
                                     <option value="Personal">Personal</option>
                                     <option value="Family">Family</option>
+                                    <option value="Misc">Misc</option>
                                 </select>
                             </div>
                         </div>
@@ -258,14 +281,14 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Min Payment (Opt)</label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-3 text-gray-400">$</span>
+                                    <span className="absolute left-3 top-3 text-gray-400">{currencyInfo.symbol}</span>
                                     <input
                                         type="number"
                                         step="0.01"
                                         name="minimumPayment"
                                         value={formData.minimumPayment}
                                         onChange={handleChange}
-                                        className="w-full pl-6 p-3 bg-gray-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-gray-900 dark:text-white"
+                                        className="w-full pl-8 p-3 bg-gray-50 dark:bg-gray-800 border-none rounded-xl focus:ring-2 focus:ring-brand-primary outline-none text-gray-900 dark:text-white"
                                         placeholder="0.00"
                                     />
                                 </div>
@@ -273,7 +296,7 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Balance</label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-3 text-gray-400">$</span>
+                                    <span className="absolute left-3 top-3 text-gray-400">{currencyInfo.symbol}</span>
                                     <input
                                         type="number"
                                         step="0.01"

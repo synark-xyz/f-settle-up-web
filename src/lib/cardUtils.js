@@ -52,17 +52,14 @@ export const getCardLogo = (cardType) => {
     return logos[cardType] || logos.unknown;
 };
 
-// Get card type gradient
-export const getCardGradient = (cardType) => {
+// Get card gradient based on category
+export const getCardGradient = (category) => {
     const gradients = {
-        visa: 'from-blue-600 to-blue-800',
-        mastercard: 'from-orange-500 to-red-600',
-        amex: 'from-teal-600 to-cyan-700',
-        discover: 'from-orange-600 to-yellow-600',
-        jcb: 'from-green-600 to-emerald-700',
-        diners: 'from-gray-700 to-gray-900',
-        unknown: 'from-purple-600 to-blue-600'
+        'Personal': 'from-emerald-600 to-teal-700', // Green
+        'Family': 'from-amber-500 to-orange-600',   // Yellow/Orange
+        'Other': 'from-rose-600 to-red-700',         // Red
+        'default': 'from-blue-600 to-indigo-700'     // Default Blue
     };
 
-    return gradients[cardType] || gradients.unknown;
+    return gradients[category] || gradients.default;
 };

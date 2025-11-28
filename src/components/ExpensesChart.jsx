@@ -27,14 +27,14 @@ const ExpensesChart = ({ cards }) => {
     }
 
     return (
-        <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+        <div className="h-72 w-full min-h-[288px]">
+            <ResponsiveContainer width="100%" height="100%" minHeight={288}>
                 <PieChart>
                     <Pie
                         data={data}
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
+                        innerRadius={0} // Filled pie chart
                         outerRadius={80}
                         paddingAngle={5}
                         dataKey="value"
