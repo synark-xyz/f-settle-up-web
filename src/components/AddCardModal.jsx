@@ -33,6 +33,24 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'image/*': [] } });
 
+    // Clear form data when modal is opened
+    React.useEffect(() => {
+        if (isOpen) {
+            setFormData({
+                name: '',
+                dueDate: '',
+                minimumPayment: '',
+                statementBalance: '',
+                category: 'Personal',
+                notes: '',
+                cardNumber: '',
+                expiryDate: ''
+            });
+            setError('');
+            setOcrConfidence(null);
+            setMode('manual');
+        }
+    }, [isOpen]);
     if (!isOpen) return null;
 
     const handleChange = (e) => {

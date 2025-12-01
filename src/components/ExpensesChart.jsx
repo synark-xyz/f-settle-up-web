@@ -1,11 +1,11 @@
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { formatCurrency } from '../lib/utils';
 
-const COLORS = ['#10b981', '#34d399', '#6ee7b7', '#064e3b', '#047857']; // Emerald shades
+const COLORS = ['#10b981', '#14b8a6', '#22d3ee', '#2dd4bf', '#0e7490', '#34d399', '#6ee7b7', '#064e3b', '#047857']; // Distinct green/teal shades
 
 const ExpensesChart = ({ cards }) => {
-    // Aggregate data by category (mocked for now as category isn't in DB yet, will default to 'Personal')
+    // Aggregate data by category
     const data = cards.reduce((acc, card) => {
         const category = card.category || 'Personal';
         const existing = acc.find(item => item.name === category);
@@ -29,21 +29,18 @@ const ExpensesChart = ({ cards }) => {
     return (
         <div className="h-72 w-full min-h-[288px]">
             <ResponsiveContainer width="100%" height="100%" minHeight={288}>
-                <PieChart>
-                    <Pie
-                        data={data}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={0} // Filled pie chart
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                        stroke="none"
-                    >
-                        {data.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                    </Pie>
+                <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                    <XAxis
+                        dataKey="name"
+                        stroke="#9ca3af"
+                        style={{ fontSize: '12px' }}
+                    />
+                    <YAxis
+                        stroke="#9ca3af"
+                        style={{ fontSize: '12px' }}
+                        tickFormatter={(value) => `$${value}`}
+                    />
                     <Tooltip
                         formatter={(value) => formatCurrency(value)}
                         contentStyle={{
@@ -54,14 +51,14 @@ const ExpensesChart = ({ cards }) => {
                             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                         }}
                         itemStyle={{ color: '#fff' }}
+                        cursor={{ fill: 'rgba(16, 185, 129, 0.1)' }}
                     />
-                    <Legend
-                        verticalAlign="bottom"
-                        height={36}
-                        iconType="circle"
-                        formatter={(value) => <span className="text-gray-400 text-xs font-medium ml-1">{value}</span>}
-                    />
-                </PieChart>
+                    <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                        {data.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                    </Bar>
+                </BarChart>
             </ResponsiveContainer>
         </div>
     );

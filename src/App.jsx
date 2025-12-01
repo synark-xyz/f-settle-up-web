@@ -78,7 +78,13 @@ const SettleUpApp = () => {
   }, [user, appId, devMode]);
 
   useEffect(() => {
-    if (!user) return;
+    // If no user, show mock data in dev mode
+    if (!user) {
+      if (devMode) {
+        setCards(getMockCards());
+      }
+      return;
+    }
 
     const collectionPath = appId === 'default'
       ? `users/${user.uid}/creditCards`
@@ -95,7 +101,7 @@ const SettleUpApp = () => {
     });
 
     return () => unsubscribe();
-  }, [user, appId]);
+  }, [user, appId, devMode]);
 
   const handleOnboardingComplete = () => {
     localStorage.setItem('hasSeenOnboarding', 'true');
@@ -104,6 +110,26 @@ const SettleUpApp = () => {
 
   const handleAddCard = async (cardData) => {
     console.log("Attempting to add card:", cardData);
+
+    // Dev mode: save to localStorage if no user
+    if (!user && devMode) {
+      const newCard = {
+        ...cardData,
+        id: `demo-${Date.now()}`,
+        dueDate: new Date(cardData.dueDate),
+        minimumPayment: parseFloat(cardData.minimumPayment) || 0,
+        statementBalance: parseFloat(cardData.statementBalance),
+        createdAt: new Date()
+      };
+      const currentCards = cards;
+      const updatedCards = [...currentCards, newCard];
+      setCards(updatedCards);
+      localStorage.setItem('demoCards', JSON.stringify(updatedCards));
+      console.log("Card added to demo mode localStorage!");
+      setIsModalOpen(false);
+      return;
+    }
+
     if (!user) {
       console.error("No user logged in, cannot add card.");
       return;
@@ -133,6 +159,15 @@ const SettleUpApp = () => {
   const handleDeleteCard = async (cardId) => {
     if (!confirm("Are you sure you want to delete this card?")) return;
 
+    // Dev mode: delete from localStorage if no user
+    if (!user && devMode) {
+      const updatedCards = cards.filter(c => c.id !== cardId);
+      setCards(updatedCards);
+      localStorage.setItem('demoCards', JSON.stringify(updatedCards));
+      console.log("Card deleted from demo mode localStorage!");
+      return;
+    }
+
     const collectionPath = appId === 'default'
       ? `users/${user.uid}/creditCards`
       : `artifacts/${appId}/users/${user.uid}/creditCards`;
@@ -140,8 +175,36 @@ const SettleUpApp = () => {
     try {
       await deleteDoc(doc(db, collectionPath, cardId));
     } catch (error) {
-      console.error("Error deleting card: ", error);
+      console.error("Error deleting card:", error);
       alert("Failed to delete card.");
+    }
+  };
+
+  const handleUpdateCard = async (cardId, updates) => {
+    // Dev mode: update in localStorage if no user
+    if (!user && devMode) {
+      const updatedCards = cards.map(c =>
+        c.id === cardId ? { ...c, ...updates } : c
+      );
+      setCards(updatedCards);
+      localStorage.setItem('demoCards', JSON.stringify(updatedCards));
+      console.log("Card updated in demo mode localStorage!");
+      return;
+    }
+
+    if (!user) return;
+
+    const appId = getAppId();
+    const collectionPath = appId === 'default'
+      ? `users/${user.uid}/creditCards`
+      : `artifacts/${appId}/users/${user.uid}/creditCards`;
+
+    try {
+      await updateDoc(doc(db, collectionPath, cardId), updates);
+      console.log("Card updated in Firebase!");
+    } catch (error) {
+      console.error("Error updating card:", error);
+      alert("Failed to update card.");
     }
   };
 
@@ -175,11 +238,22 @@ const SettleUpApp = () => {
               onMarkPaid={handleDeleteCard}
             />
 
+            {/* Demo Mode Banner */}
+            {!user && devMode && (
+              <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🎭</span>
+                  <span className="font-semibold text-sm">Demo Mode</span>
+                  <span className="text-xs opacity-90">- Changes saved to browser storage only</span>
+                </div>
+              </div>
+            )}
+
             <CardList cards={cards} onDelete={handleDeleteCard} />
 
             <button
               onClick={() => {
-                if (!user) {
+                if (!user && !devMode) {
                   setIsLoginModalOpen(true);
                 } else {
                   setIsModalOpen(true);

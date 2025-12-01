@@ -24,56 +24,65 @@ const Dashboard = ({ cards, onDelete }) => {
 
     const handleCardDelete = async (id) => {
         onDelete(id);
+        setSelectedCard(null);
     };
 
     return (
         <div className="space-y-8">
-            {/* Header / Summary Section */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Total Owed Card */}
-                <div className="bg-dark-card rounded-2xl p-6 border border-white/5 shadow-lg relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/10 rounded-full blur-2xl -mr-16 -mt-16 transition-all group-hover:bg-brand-primary/20"></div>
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-brand-primary/10 rounded-lg">
-                                <TrendingUp className="text-brand-primary" size={20} />
+            {/* Header / Summary Section - Masonry Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[300px]">
+                {/* Left Column - Summary Cards */}
+                <div className="flex flex-col h-full justify-evenly gap-6">
+                    {/* Total Owed Card */}
+                    <div className="bg-dark-card rounded-2xl p-6 border border-white/5 shadow-lg relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-2xl -mr-16 -mt-16 transition-all group-hover:bg-red-500/20"></div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-red-500/10 rounded-lg rotate-180">
+                                    <TrendingUp className="text-red-500" size={20} />
+                                </div>
+                                <h3 className="text-gray-400 font-medium text-sm">Total Owed</h3>
                             </div>
-                            <h3 className="text-gray-400 font-medium text-sm">Total Owed</h3>
+                            <div>
+                                <div className="text-3xl font-bold text-white tracking-tight">
+                                    {formatCurrency(stats.totalOwed, selectedCurrency)}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">Across all cards</p>
+                            </div>
                         </div>
-                        <div>
-                            <div className="text-3xl font-bold text-white tracking-tight">
-                                {formatCurrency(stats.totalOwed, selectedCurrency)}
+                    </div>
+
+                    {/* Min Due Card */}
+                    <div className="bg-dark-card rounded-2xl p-6 border border-white/5 shadow-lg relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl -mr-16 -mt-16 transition-all group-hover:bg-purple-500/20"></div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 bg-purple-500/10 rounded-lg">
+                                    <Calendar className="text-purple-400" size={20} />
+                                </div>
+                                <h3 className="text-gray-400 font-medium text-sm">Due This Month</h3>
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">Across all cards</p>
+                            <div>
+                                <div className="text-3xl font-bold text-white tracking-tight">
+                                    {formatCurrency(stats.minDueThisMonth, selectedCurrency)}
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">Minimum payments</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Min Due Card */}
-                <div className="bg-dark-card rounded-2xl p-6 border border-white/5 shadow-lg relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl -mr-16 -mt-16 transition-all group-hover:bg-purple-500/20"></div>
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-purple-500/10 rounded-lg">
-                                <Calendar className="text-purple-400" size={20} />
+                {/* Right Column - Expense Insights */}
+                <div className="bg-dark-card rounded-2xl p-6 border border-white/5 shadow-lg relative overflow-hidden flex flex-col min-h-[180px]">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <div className="p-2 bg-emerald-500/10 rounded-lg">
+                                <TrendingUp className="text-emerald-400" size={20} />
                             </div>
-                            <h3 className="text-gray-400 font-medium text-sm">Due This Month</h3>
-                        </div>
-                        <div>
-                            <div className="text-3xl font-bold text-white tracking-tight">
-                                {formatCurrency(stats.minDueThisMonth, selectedCurrency)}
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">Minimum payments</p>
+                            <h3 className="text-gray-400 font-medium text-sm">Expense Insights</h3>
                         </div>
                     </div>
-                </div>
-
-                {/* Expenses Chart (Promoted to top) */}
-                <div className="bg-dark-card rounded-2xl p-6 border border-white/5 shadow-lg relative overflow-hidden">
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-gray-400 font-medium text-sm">Spending by Category</h3>
-                    </div>
-                    <div className="h-32">
+                    <div>
                         <ExpensesChart cards={cards} />
                     </div>
                 </div>
