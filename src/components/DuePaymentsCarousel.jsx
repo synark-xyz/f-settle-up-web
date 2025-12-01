@@ -8,6 +8,9 @@ const DuePaymentsCarousel = ({ cards, onMarkPaid }) => {
     const { selectedCurrency } = useCurrency();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selectedCard, setSelectedCard] = useState(null);
+    React.useEffect(() => {
+        console.log('selectedCard changed:', selectedCard);
+    }, [selectedCard]);
 
     // Filter cards due within next 30 days and sort by due date
     const upcomingCards = useMemo(() => {
@@ -53,7 +56,7 @@ const DuePaymentsCarousel = ({ cards, onMarkPaid }) => {
                 {/* Horizontal Scroll Container */}
                 <div className="relative">
                     <div
-                        className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent pb-2"
+                        className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent pb-2 flex-wrap md:flex-nowrap"
                         style={{ scrollbarWidth: 'thin' }}
                     >
                         {upcomingCards.map((card) => {
@@ -63,7 +66,7 @@ const DuePaymentsCarousel = ({ cards, onMarkPaid }) => {
                             return (
                                 <div
                                     key={card.id}
-                                    className={`flex-shrink-0 w-[calc(50%-8px)] md:w-[calc(50%-8px)] snap-start bg-dark-card rounded-2xl p-5 border-2 ${isUrgent ? 'border-red-500' : 'border-white/5'
+                                    className={`flex-shrink-0 w-full sm:w-[calc(100%-8px)] md:w-[calc(50%-8px)] snap-start bg-dark-card rounded-2xl p-5 border-2 ${isUrgent ? 'border-red-500' : 'border-white/5'
                                         } hover:border-brand-primary/50 transition-all aspect-[3/2] flex flex-col`}
                                 >
                                     <div className="flex items-start justify-between mb-3">
@@ -91,14 +94,39 @@ const DuePaymentsCarousel = ({ cards, onMarkPaid }) => {
 
                                     <div className="flex gap-2">
                                         <button
-                                            onClick={() => onMarkPaid?.(card.id)}
+                                            onClick={() => {
+                                                // Custom confirmation alert
+                                                const alertBox = document.createElement('div');
+                                                alertBox.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/60';
+                                                alertBox.innerHTML = `
+                                                    <div class='bg-white dark:bg-dark-surface rounded-2xl shadow-2xl p-6 text-center max-w-xs'>
+                                                        <h3 class='text-lg font-bold mb-2 text-gray-800 dark:text-white'>Mark as Paid?</h3>
+                                                        <p class='text-sm text-gray-500 dark:text-gray-300 mb-4'>Are you sure you want to mark this payment as paid?</p>
+                                                        <div class='flex gap-2 justify-center'>
+                                                            <button id='paid-confirm' class='px-4 py-2 bg-brand-primary text-white rounded-lg font-bold'>Yes</button>
+                                                            <button id='paid-cancel' class='px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg'>Cancel</button>
+                                                        </div>
+                                                    </div>
+                                                `;
+                                                document.body.appendChild(alertBox);
+                                                document.getElementById('paid-confirm').onclick = () => {
+                                                    onMarkPaid?.(card.id);
+                                                    document.body.removeChild(alertBox);
+                                                };
+                                                document.getElementById('paid-cancel').onclick = () => {
+                                                    document.body.removeChild(alertBox);
+                                                };
+                                            }}
                                             className="flex-1 flex items-center justify-center gap-2 bg-brand-gradient text-white font-medium py-2.5 rounded-lg hover:shadow-lg hover:shadow-brand-primary/30 transition-all active:scale-95"
                                         >
                                             <Check size={16} />
                                             Paid
                                         </button>
                                         <button
-                                            onClick={() => setSelectedCard(card)}
+                                            onClick={() => {
+                                                console.log('Remind button clicked for card:', card);
+                                                setSelectedCard(card);
+                                            }}
                                             className="flex-1 flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-medium py-2.5 rounded-lg transition-all active:scale-95"
                                         >
                                             <Bell size={16} />
@@ -115,13 +143,22 @@ const DuePaymentsCarousel = ({ cards, onMarkPaid }) => {
             </div>
 
                         <ReminderDialog
-                                isOpen={!!selectedCard}
-                                onClose={() => setSelectedCard(null)}
-                                payment={selectedCard ? {
-                                    title: selectedCard.name,
-                                    dueDate: selectedCard.dueDate,
-                                    description: `Minimum payment: ${formatCurrency(selectedCard.minimumPayment || selectedCard.statementBalance, selectedCurrency)}`
-                                } : null}
+                            isOpen={!!selectedCard}
+                            onClose={() => {
+                                console.log('ReminderDialog closed');
+                                setSelectedCard(null);
+                            }}
+                            payment={selectedCard ? {
+                                title: selectedCard.name || 'Payment Due',
+                                dueDate: selectedCard.dueDate
+                                  ? (selectedCard.dueDate.toDate
+                                      ? selectedCard.dueDate.toDate().toISOString().slice(0, 10)
+                                      : (selectedCard.dueDate instanceof Date
+                                          ? selectedCard.dueDate.toISOString().slice(0, 10)
+                                          : new Date(selectedCard.dueDate).toISOString().slice(0, 10)))
+                                  : '',
+                                description: `Minimum payment: ${formatCurrency(selectedCard.minimumPayment || selectedCard.statementBalance, selectedCurrency)}`
+                            } : undefined}
                         />
         </>
     );

@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Camera, Upload, Sparkles, CreditCard } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-import { processImageWithGemini } from '../lib/gemini';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { getCurrencyInfo } from '../lib/currencyUtils';
 
@@ -58,78 +57,25 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const startCamera = async () => {
-        setMode('scan');
-        setError('');
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: 'environment',
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
-                }
-            });
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-            }
-        } catch (e) {
-            console.error("Camera error", e);
-            setError("Camera access denied or unavailable. Please enable camera permissions.");
+
+    // Handler for credit card scanner
+    const handleCardScan = (data) => {
+        if (data) {
+            setFormData(prev => ({
+                ...prev,
+                cardNumber: data.cardNumber || prev.cardNumber,
+                expiryDate: data.expiryDate || prev.expiryDate,
+                name: data.cardHolder || prev.name
+            }));
             setMode('manual');
         }
-    };
-
-    const captureImage = async () => {
-        if (!videoRef.current) return;
-
-        setLoading(true);
-        setLoadingStep('Capturing image...');
-
-        const canvas = document.createElement('canvas');
-        canvas.width = videoRef.current.videoWidth;
-        canvas.height = videoRef.current.videoHeight;
-        canvas.getContext('2d').drawImage(videoRef.current, 0, 0);
-
-        // Stop camera stream
-        const stream = videoRef.current.srcObject;
-        stream?.getTracks().forEach(track => track.stop());
-
-        // Convert to blob and process with Gemini
-        canvas.toBlob(async (blob) => {
-            const file = new File([blob], "card-scan.jpg", { type: "image/jpeg" });
-
-            setLoadingStep('Analyzing card with AI...');
-
-            // Import processCardScan
-            const { processCardScan } = await import('../lib/gemini');
-            const result = await processCardScan(file);
-
-            if (result.error) {
-                setError(result.error);
-                setMode('manual');
-                setLoadingStep('');
-                setOcrConfidence(null);
-            } else {
-                // Populate form with scanned data
-                setFormData(prev => ({
-                    ...prev,
-                    name: result.name || prev.name,
-                    cardNumber: result.cardNumber || prev.cardNumber,
-                    expiryDate: result.expiryDate || prev.expiryDate,
-                    last4: result.last4 || (result.cardNumber ? result.cardNumber.slice(-4) : prev.last4)
-                }));
-                setOcrConfidence(result.confidence);
-                setMode('manual'); // Switch to form to review and add more details
-                setLoadingStep('');
-            }
-            setLoading(false);
-        }, 'image/jpeg', 0.95);
     };
 
     const handleImageUpload = async (file) => {
         setLoading(true);
         setError('');
         try {
+            const { processImageWithGemini } = await import('../lib/gemini');
             const result = await processImageWithGemini(file);
             if (result.error) {
                 setError(result.error);
@@ -177,10 +123,10 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
                     {mode === 'manual' && (
                         <div className="grid grid-cols-2 gap-3 mb-6">
                             <button
-                                onClick={startCamera}
+                                onClick={() => setMode('scan')}
                                 className="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             >
-                                <Camera className="mb-2 text-brand-primary" />
+                                <CreditCard className="mb-2 text-brand-primary" />
                                 <span className="text-xs font-medium text-gray-600 dark:text-gray-300">Scan Card</span>
                             </button>
                             <div {...getRootProps()} className="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-800 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer border-2 border-dashed border-transparent hover:border-brand-secondary">
@@ -192,23 +138,16 @@ const AddCardModal = ({ isOpen, onClose, onAdd }) => {
                     )}
 
                     {mode === 'scan' && (
-                        <div className="relative rounded-xl overflow-hidden bg-black aspect-video mb-4">
-                            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                        <div className="mb-4">
+                            <CreditCardScanner
+                                onScan={handleCardScan}
+                                onError={() => setError('Failed to scan card. Try again.')}
+                            />
                             <button
-                                onClick={captureImage}
-                                className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-16 h-16 bg-white rounded-full border-4 border-gray-300 flex items-center justify-center"
+                                onClick={() => setMode('manual')}
+                                className="mt-2 px-4 py-2 bg-gray-700 text-white rounded-lg"
                             >
-                                <div className="w-12 h-12 bg-red-500 rounded-full" />
-                            </button>
-                            <button
-                                onClick={() => {
-                                    const stream = videoRef.current?.srcObject;
-                                    stream?.getTracks().forEach(track => track.stop());
-                                    setMode('manual');
-                                }}
-                                className="absolute top-2 right-2 p-2 bg-black/50 text-white rounded-full"
-                            >
-                                <X size={20} />
+                                <X size={20} /> Cancel
                             </button>
                         </div>
                     )}

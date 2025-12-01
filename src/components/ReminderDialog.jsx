@@ -9,14 +9,23 @@ import { X } from 'lucide-react';
  * @param {object} payment - Payment object with title, dueDate, description
  */
 const ReminderDialog = ({ isOpen, onClose, payment }) => {
+  React.useEffect(() => {
+    if (isOpen) {
+      console.log('ReminderDialog opened', payment);
+    }
+  }, [isOpen, payment]);
+
   if (!isOpen) return null;
+
+  // Fallback payment object
+  const safePayment = payment || { title: 'Payment Due', dueDate: '', description: 'Upcoming payment reminder from SettleUp' };
 
   // Google Calendar event creation URL
   const getGoogleCalendarUrl = () => {
-    const title = encodeURIComponent(payment?.title || 'Payment Due');
-    const details = encodeURIComponent(payment?.description || 'Upcoming payment reminder from SettleUp');
-    const startDate = payment?.dueDate
-      ? new Date(payment.dueDate).toISOString().replace(/[-:]|\.\d{3}/g, '').slice(0, 15)
+    const title = encodeURIComponent(safePayment.title);
+    const details = encodeURIComponent(safePayment.description);
+    const startDate = safePayment.dueDate
+      ? new Date(safePayment.dueDate).toISOString().replace(/[-:]|\.\d{3}/g, '').slice(0, 15)
       : '';
     // All-day event
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&dates=${startDate}/${startDate}`;
@@ -25,7 +34,7 @@ const ReminderDialog = ({ isOpen, onClose, payment }) => {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -46,16 +55,19 @@ const ReminderDialog = ({ isOpen, onClose, payment }) => {
           </button>
           <h2 className="text-xl font-bold text-white mb-2">Set Reminder</h2>
           <p className="text-sm text-gray-400 mb-6">
-            Add a reminder for <span className="text-emerald-400 font-semibold">{payment?.title}</span> due on <span className="text-emerald-400 font-semibold">{payment?.dueDate}</span>.
+            Add a reminder for <span className="text-emerald-400 font-semibold">{safePayment.title}</span> due on <span className="text-emerald-400 font-semibold">{safePayment.dueDate || 'N/A'}</span>.
           </p>
-          <a
-            href={getGoogleCalendarUrl()}
-            target="_blank"
-            rel="noopener noreferrer"
+          {!safePayment.dueDate && (
+            <div className="text-red-400 text-xs mb-4">No due date found for this payment. Please check the card data.</div>
+          )}
+          <button
+            onClick={() => {
+              window.open(getGoogleCalendarUrl(), '_blank', 'noopener,noreferrer');
+            }}
             className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2 rounded-lg shadow transition-all"
           >
             Add to Google Calendar
-          </a>
+          </button>
         </motion.div>
       </motion.div>
     </AnimatePresence>
